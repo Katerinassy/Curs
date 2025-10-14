@@ -1,0 +1,108 @@
+.profile-container {
+  max-width: 800px;
+  margin: 30px auto;
+  padding: 20px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.profile-title {
+  font-size: 28px;
+  font-weight: bold;
+  margin-bottom: 15px;
+  text-align: center;
+}
+
+.profile-email {
+  text-align: center;
+  margin-bottom: 25px;
+}
+
+.profile-subtitle {
+  font-size: 22px;
+  margin-bottom: 15px;
+}
+
+.no-orders {
+  color: gray;
+}
+
+.orders-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.order-card {
+  border: 1px solid #ddd;
+  padding: 15px;
+  border-radius: 10px;
+  background: #fafafa;
+}
+
+.order-total {
+  font-weight: bold;
+  margin-top: 10px;
+}
+
+.order-items {
+  list-style: none;
+  padding: 0;
+  margin: 10px 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.order-item {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  background: #fff;
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid #eee;
+}
+
+.order-item img {
+  width: 60px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: 6px;
+}
+
+.status-paid {
+  color: green;
+  font-weight: bold;
+  margin-top: 8px;
+}
+
+.status-delivery {
+  color: #007bff;
+}
+
+.go-cart {
+  text-align: center;
+  margin-top: 25px;
+}
+
+.btn {
+  background: black;
+  color: white;
+  padding: 10px 20px;
+  text-decoration: none;
+  border-radius: 6px;
+  transition: 0.3s;
+}
+
+.btn:hover {
+  background: #333;
+}
+
+.not-logged {
+  text-align: center;
+  color: red;
+  margin-top: 50px;
+  font-size: 18px;
+}

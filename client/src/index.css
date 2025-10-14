@@ -1,0 +1,8 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Можно добавить свои глобальные стили */
+body {
+  font-family: Arial, sans-serif;
+}
