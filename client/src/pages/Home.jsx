@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import "../style/home.css";
 import heroImg from "../img/girl.png"; // сюда положи картинку (например, девушка с украшениями)
-import heroVideo from "../img/video.mp4"
+
 function Home() {
   return (
     <div className="home">
@@ -13,9 +13,7 @@ function Home() {
             У нас вы найдёте изысканные кольца, браслеты и ожерелья,
             созданные для того, чтобы подчеркнуть вашу индивидуальность.
           </p>
-                <video className="bg-video" autoPlay loop muted playsInline>
-        <source src={heroVideo} type="video/mp4" />
-      </video>
+                
 
           <Link to="/catalog" className="catalog-btn">
             Перейти в каталог
