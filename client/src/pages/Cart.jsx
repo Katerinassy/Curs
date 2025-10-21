@@ -68,11 +68,41 @@ function Cart() {
       const result = await response.json();
 
       if (response.ok) {
+        // Сохраняем заказ в localStorage для профиля
+        const currentUser = localStorage.getItem("currentUser");
+        if (currentUser) {
+          const existingOrders = JSON.parse(localStorage.getItem("orders")) || {};
+          const userOrders = existingOrders[currentUser] || [];
+          
+          userOrders.unshift({
+            id: result.order._id,
+            orderNumber: result.order.orderNumber,
+            date: new Date().toLocaleDateString('ru-RU'),
+            fullName,
+            address,
+            phone,
+            total,
+            items: cart.map(item => ({
+              name: item.name,
+              price: item.price,
+              quantity: item.quantity || 1,
+              image: item.image
+            })),
+            status: 'pending',
+            paymentStatus: 'paid'
+          });
+          
+          existingOrders[currentUser] = userOrders;
+          localStorage.setItem("orders", JSON.stringify(existingOrders));
+        }
+
+        // Очищаем корзину
         setCart([]);
         localStorage.removeItem("cart");
         setFullName("");
         setAddress("");
         setPhone("");
+        
         alert(`✅ Заказ успешно оформлен! Номер заказа: ${result.order?.orderNumber || 'успешно создан'}`);
       } else {
         console.log("Ошибка сервера:", result);
@@ -91,6 +121,9 @@ function Cart() {
       <div className="cart-container">
         <h1 className="cart-title">🛒 Ваша корзина</h1>
         <p className="empty-cart">Ваша корзина пуста</p>
+        <div className="go-shopping">
+          <a href="/catalog" className="btn btn-primary">Перейти к покупкам</a>
+        </div>
       </div>
     );
   }

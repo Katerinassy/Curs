@@ -150,16 +150,21 @@ router.post('/simple', async (req, res) => {
   }
 });
 
-// Получить заказы пользователя
+// Получить заказы пользователя по userId
 router.get('/user/:userId', async (req, res) => {
   try {
     const orders = await Order.find({ user: req.params.userId })
       .populate('items.product')
       .sort({ createdAt: -1 });
     
+    console.log(`Найдено заказов для пользователя ${req.params.userId}:`, orders.length);
     res.json(orders);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Ошибка при получении заказов пользователя:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Ошибка при получении заказов: ' + error.message 
+    });
   }
 });
 

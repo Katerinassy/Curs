@@ -64,7 +64,7 @@ const orderSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Генерация номера заказа перед сохранением
+
 orderSchema.pre('save', async function(next) {
   if (!this.orderNumber) {
     const date = new Date();
