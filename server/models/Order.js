@@ -1,19 +1,79 @@
-import mongoose from "mongoose";
+import mongoose from 'mongoose';
 
 const orderSchema = new mongoose.Schema({
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
-  items: [
-    {
-      productId: { type: mongoose.Schema.Types.ObjectId, ref: "Product", required: true },
-      quantity: { type: Number, required: true, min: 1 },
-      price: { type: Number, required: true },
+  user: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  },
+  items: [{
+    product: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Product',
+      required: false
     },
-  ],
-  total: { type: Number, required: true },
-  status: { type: String, enum: ["pending", "paid", "cancelled"], default: "pending" },
-  fullName: { type: String, required: true },
-  address: { type: String, required: true },
-  phone: { type: String, required: true },
-}, { timestamps: true });
+    productName: {
+      type: String,
+      required: true
+    },
+    quantity: {
+      type: Number,
+      required: true
+    },
+    price: {
+      type: Number,
+      required: true
+    }
+  }],
+  totalAmount: {
+    type: Number,
+    required: true
+  },
+  status: {
+    type: String,
+    enum: ['pending', 'processing', 'shipped', 'delivered', 'cancelled'],
+    default: 'pending'
+  },
+  paymentStatus: {
+    type: String,
+    enum: ['pending', 'paid', 'failed', 'refunded'],
+    default: 'paid'
+  },
+  paymentMethod: {
+    type: String,
+    enum: ['stripe', 'test', 'cash'],
+    default: 'test'
+  },
+  paymentIntentId: {
+    type: String
+  },
+  shippingAddress: {
+    firstName: String,
+    lastName: String,
+    address: String,
+    city: String,
+    postalCode: String,
+    country: String,
+    phone: String
+  },
+  orderNumber: {
+    type: String,
+    unique: true
+  }
+}, {
+  timestamps: true
+});
 
-export default mongoose.model("Order", orderSchema);
+// Генерация номера заказа перед сохранением
+orderSchema.pre('save', async function(next) {
+  if (!this.orderNumber) {
+    const date = new Date();
+    const timestamp = date.getTime();
+    const random = Math.floor(Math.random() * 1000);
+    this.orderNumber = `ORD-${timestamp}-${random}`;
+  }
+  next();
+});
+
+const Order = mongoose.model('Order', orderSchema);
+export { Order };

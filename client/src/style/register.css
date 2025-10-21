@@ -1,0 +1,107 @@
+/* client/src/pages/Register.css */
+.register-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f9e6d3, #fdfcfb);
+}
+
+.register-form {
+  background: white;
+  padding: 40px;
+  border-radius: 15px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  width: 100%;
+  max-width: 400px;
+}
+
+.register-form h1 {
+  margin-bottom: 20px;
+  font-size: 24px;
+  font-weight: bold;
+  color: #333;
+  text-align: center;
+}
+
+.register-form label {
+  font-weight: 500;
+  color: #333;
+  margin-bottom: -5px;
+  font-size: 14px;
+  display: block;
+}
+
+.register-form input {
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  outline: none;
+  transition: border-color 0.3s;
+  font-size: 16px;
+  width: 100%;
+  box-sizing: border-box;
+  margin-bottom: 15px;
+}
+
+.register-form input:focus {
+  border-color: #b38e6a;
+}
+
+.register-form input::placeholder {
+  color: #a0a0a0;
+  font-size: 14px;
+}
+
+.btn-primary {
+  background: #b38e6a;
+  color: white;
+  border: none;
+  padding: 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: 0.3s;
+  margin-top: 10px;
+  width: 100%;
+}
+
+.btn-primary:hover {
+  background: #8a6c50;
+}
+
+.auth-link {
+  text-align: center;
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #eee;
+}
+
+.auth-link p {
+  margin: 0;
+  color: #666;
+  font-size: 14px;
+}
+
+.auth-link a {
+  color: #b38e6a;
+  text-decoration: none;
+  font-weight: bold;
+  transition: color 0.3s;
+}
+
+.auth-link a:hover {
+  color: #8a6c50;
+  text-decoration: underline;
+}
+
+/* Адаптивность */
+@media (max-width: 480px) {
+  .register-container {
+    padding: 20px;
+  }
+  
+  .register-form {
+    padding: 30px 25px;
+  }
+}

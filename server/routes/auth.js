@@ -1,47 +1,23 @@
 import express from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import User from '../models/User.js';
+import { User } from '../models/User.js';
 
 const router = express.Router();
 
-// Регистрация пользователя
+// Регистрация
 router.post('/register', async (req, res) => {
   try {
     const { name, email, password } = req.body;
 
-    // Проверяем обязательные поля
-    if (!name || !email || !password) {
-      return res.status(400).json({ 
-        error: 'Все поля обязательны для заполнения' 
-      });
-    }
-
-    // Проверяем валидность email
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      return res.status(400).json({ 
-        error: 'Некорректный формат email' 
-      });
-    }
-
-    // Проверяем длину пароля
-    if (password.length < 6) {
-      return res.status(400).json({ 
-        error: 'Пароль должен содержать минимум 6 символов' 
-      });
-    }
-
-    // Проверяем есть ли пользователь с таким email
+    // Проверяем, существует ли пользователь
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      return res.status(400).json({ 
-        error: 'Пользователь с таким email уже зарегистрирован' 
-      });
+      return res.status(400).json({ message: 'Пользователь с таким email уже существует' });
     }
 
-    // Хэшируем пароль
-    const hashedPassword = await bcrypt.hash(password, 12);
+    // Хешируем пароль
+    const hashedPassword = await bcrypt.hash(password, 10);
 
     // Создаем пользователя
     const user = new User({
@@ -54,109 +30,85 @@ router.post('/register', async (req, res) => {
 
     // Создаем JWT токен
     const token = jwt.sign(
-      { userId: user._id }, 
-      process.env.JWT_SECRET || 'fallback-secret-key',
-      { expiresIn: '24h' }
+      { id: user._id }, 
+      process.env.JWT_SECRET || 'fallback_secret',
+      { expiresIn: '30d' }
     );
 
-    res.status(201).json({ 
+    res.status(201).json({
+      success: true,
       message: 'Пользователь успешно зарегистрирован',
       token,
-      user: { 
-        id: user._id, 
-        name: user.name, 
-        email: user.email 
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email
       }
     });
-
   } catch (error) {
-    console.error('Ошибка регистрации:', error);
-    res.status(500).json({ 
-      error: 'Внутренняя ошибка сервера' 
-    });
+    res.status(500).json({ message: error.message });
   }
 });
 
-// Вход пользователя
+// Вход
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Проверяем обязательные поля
-    if (!email || !password) {
-      return res.status(400).json({ 
-        error: 'Email и пароль обязательны' 
-      });
-    }
-
-    // Ищем пользователя
+    // Находим пользователя
     const user = await User.findOne({ email });
     if (!user) {
-      return res.status(400).json({ 
-        error: 'Пользователь с таким email не найден' 
-      });
+      return res.status(400).json({ message: 'Пользователь не найден' });
     }
 
     // Проверяем пароль
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
-      return res.status(400).json({ 
-        error: 'Неверный пароль' 
-      });
+      return res.status(400).json({ message: 'Неверный пароль' });
     }
 
     // Создаем JWT токен
     const token = jwt.sign(
-      { userId: user._id }, 
-      process.env.JWT_SECRET || 'fallback-secret-key',
-      { expiresIn: '24h' }
+      { id: user._id },
+      process.env.JWT_SECRET || 'fallback_secret',
+      { expiresIn: '30d' }
     );
 
     res.json({
+      success: true,
       message: 'Вход выполнен успешно',
       token,
-      user: { 
-        id: user._id, 
-        name: user.name, 
-        email: user.email 
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email
       }
     });
-
   } catch (error) {
-    console.error('Ошибка входа:', error);
-    res.status(500).json({ 
-      error: 'Внутренняя ошибка сервера' 
-    });
+    res.status(500).json({ message: error.message });
   }
 });
 
-// Получение информации о текущем пользователе (опционально)
+// Получить текущего пользователя
 router.get('/me', async (req, res) => {
   try {
-    const token = req.headers.authorization?.split(' ')[1];
+    const token = req.header('Authorization')?.replace('Bearer ', '');
     
     if (!token) {
-      return res.status(401).json({ error: 'Токен не предоставлен' });
+      return res.status(401).json({ message: 'Нет токена' });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret-key');
-    const user = await User.findById(decoded.userId).select('-password');
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret');
+    const user = await User.findById(decoded.id).select('-password');
     
     if (!user) {
-      return res.status(404).json({ error: 'Пользователь не найден' });
+      return res.status(401).json({ message: 'Пользователь не найден' });
     }
 
-    res.json({ user });
+    res.json(user);
   } catch (error) {
-    console.error('Ошибка получения данных пользователя:', error);
-    res.status(401).json({ error: 'Неверный токен' });
+    res.status(401).json({ message: 'Токен не действителен' });
   }
-});
-
-// Выход пользователя (опционально)
-router.post('/logout', (req, res) => {
-  // В JWT выход реализуется на клиенте удалением токена
-  res.json({ message: 'Выход выполнен успешно' });
 });
 
 export default router;

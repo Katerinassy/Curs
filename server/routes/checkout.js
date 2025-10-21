@@ -1,49 +1,99 @@
-import express from "express";
-import Order from "../models/Order.js";
-import auth from "../middleware/auth.js";
+import express from 'express';
+import { Cart } from '../models/Cart.js';
+import { Order } from '../models/Order.js';
+import auth from '../middleware/auth.js';
 
 const router = express.Router();
-
-// Сохранение заказа (без оплаты)
-router.post("/", auth, async (req, res) => {
+// Тестовый процесс оплаты
+router.post('/test-payment', auth, async (req, res) => {
   try {
-    console.log(`Получен запрос на /checkout в 16:04 EEST 09.10.2025. Заголовки:`, req.headers);
-    console.log(`Тело запроса:`, req.body);
-    const { date, fullName, address, phone, total, items } = req.body;
-
-    // Валидация данных
-    if (!fullName || !address || !phone || !total || !items || items.length === 0) {
-      console.log(`Ошибка валидации в 16:04 EEST 09.10.2025: Не все данные предоставлены`, { fullName, address, phone, total, items });
-      return res.status(400).json({ error: "Заполните все поля и добавьте товары" });
+    const { shippingAddress } = req.body;
+    
+    // Находим корзину пользователя
+    const cart = await Cart.findOne({ user: req.user.id }).populate('items.product');
+    
+    if (!cart || cart.items.length === 0) {
+      return res.status(400).json({ message: 'Корзина пуста' });
     }
-
-    console.log(`User ID: ${req.userId}`);
-
-    // Создание нового заказа
-    const newOrder = new Order({
-      userId: req.userId,
-      date,
-      fullName,
-      address,
-      phone,
-      total,
-      items: items.map(item => ({
-        name: item.name,
+    
+    // Создаем заказ со статусом "оплачено"
+    const order = new Order({
+      user: req.user.id,
+      items: cart.items.map(item => ({
+        product: item.product._id,
+        quantity: item.quantity,
         price: item.price,
-        img: item.img,
-        quantity: item.quantity || 1,
+        productName: item.product.name // Сохраняем название для истории
       })),
-      status: "pending",
+      totalAmount: cart.totalAmount,
+      status: 'processing',
+      paymentStatus: 'paid',
+      paymentMethod: 'test',
+      paymentIntentId: 'test_payment_' + Date.now(),
+      shippingAddress: shippingAddress || {
+        firstName: 'Test',
+        lastName: 'User',
+        address: 'Test Address',
+        city: 'Test City',
+        postalCode: '123456',
+        country: 'Test Country'
+      }
     });
-
-    await newOrder.save();
-    console.log(`Заказ сохранён в БД. ID: ${newOrder._id} в 16:04 EEST 09.10.2025`);
-
-    res.json({ message: "Заказ сохранён в БД", orderId: newOrder._id });
-  } catch (err) {
-    console.error(`Ошибка при сохранении заказа в 16:04 EEST 09.10.2025:`, err.message, err.stack);
-    res.status(500).json({ error: err.message });
+    
+    await order.save();
+    
+    // Очищаем корзину
+    cart.items = [];
+    cart.totalAmount = 0;
+    await cart.save();
+    
+    // Возвращаем созданный заказ
+    const populatedOrder = await Order.findById(order._id).populate('items.product');
+    
+    res.json({
+      success: true,
+      message: 'Тестовый платеж успешно завершен! Заказ создан.',
+      order: populatedOrder
+    });
+    
+  } catch (error) {
+    console.error('Ошибка при тестовой оплате:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Ошибка при обработке заказа: ' + error.message 
+    });
   }
 });
 
-export default router;
+// Получить историю заказов пользователя
+router.get('/orders', auth, async (req, res) => {
+  try {
+    const orders = await Order.find({ user: req.user.id })
+      .populate('items.product')
+      .sort({ createdAt: -1 });
+    
+    res.json(orders);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Получить детали заказа
+router.get('/orders/:orderId', auth, async (req, res) => {
+  try {
+    const order = await Order.findOne({ 
+      _id: req.params.orderId, 
+      user: req.user.id 
+    }).populate('items.product');
+    
+    if (!order) {
+      return res.status(404).json({ message: 'Заказ не найден' });
+    }
+    
+    res.json(order);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+module.exports = router;

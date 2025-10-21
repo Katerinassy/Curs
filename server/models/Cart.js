@@ -1,26 +1,43 @@
-import mongoose from "mongoose";
+import mongoose from 'mongoose';
 
 const cartSchema = new mongoose.Schema({
-  userId: {
+  user: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "User",
-    required: true,
-    unique: true, // Один пользователь — одна корзина
+    ref: 'User',
+    required: true
   },
-  items: [
-    {
-      productId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Product",
-        required: true,
-      },
-      name: { type: String, required: true },
-      price: { type: Number, required: true },
-      img: { type: String, required: true },
-      quantity: { type: Number, required: true, default: 1, min: 1 },
+  items: [{
+    product: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Product',
+      required: true
     },
-  ],
-  updatedAt: { type: Date, default: Date.now },
-}, { timestamps: true });
+    quantity: {
+      type: Number,
+      required: true,
+      min: 1,
+      default: 1
+    },
+    price: {
+      type: Number,
+      required: true
+    }
+  }],
+  totalAmount: {
+    type: Number,
+    default: 0
+  }
+}, {
+  timestamps: true
+});
 
-export default mongoose.model("Cart", cartSchema);
+// Метод для пересчета общей суммы
+cartSchema.methods.calculateTotal = function() {
+  this.totalAmount = this.items.reduce((total, item) => {
+    return total + (item.price * item.quantity);
+  }, 0);
+  return this.totalAmount;
+};
+
+const Cart = mongoose.model('Cart', cartSchema);
+export { Cart };

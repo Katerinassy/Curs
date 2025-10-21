@@ -6,120 +6,177 @@ function Cart() {
   const [fullName, setFullName] = useState("");
   const [address, setAddress] = useState("");
   const [phone, setPhone] = useState("");
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const isLoggedIn = localStorage.getItem("isLoggedIn");
-    if (!isLoggedIn) {
-      window.location.href = "/login";
-    }
-
     const savedCart = JSON.parse(localStorage.getItem("cart")) || [];
     setCart(savedCart);
   }, []);
 
   const total = cart.reduce((sum, item) => sum + item.price * (item.quantity || 1), 0);
 
+  const updateQuantity = (index, newQuantity) => {
+    if (newQuantity < 1) return;
+    
+    const updatedCart = [...cart];
+    updatedCart[index].quantity = newQuantity;
+    setCart(updatedCart);
+    localStorage.setItem("cart", JSON.stringify(updatedCart));
+  };
+
+  const removeItem = (index) => {
+    const updatedCart = cart.filter((_, i) => i !== index);
+    setCart(updatedCart);
+    localStorage.setItem("cart", JSON.stringify(updatedCart));
+  };
+
   const handleCheckout = async (e) => {
     e.preventDefault();
+    setLoading(true);
 
-    if (!fullName || !address || !phone) {
-      alert("Заполните все поля!");
+    if (!fullName || !address || !phone || cart.length === 0) {
+      alert("Заполните все поля и добавьте товары в корзину!");
+      setLoading(false);
       return;
     }
-
-    const currentUser = localStorage.getItem("currentUser");
-    if (!currentUser) {
-      alert("Ошибка: пользователь не найден.");
-      return;
-    }
-
-    const newOrder = {
-      date: new Date().toLocaleString(),
-      fullName,
-      address,
-      phone,
-      total,
-      items: cart.map(item => ({
-        name: item.name,
-        price: item.price,
-        img: item.img,
-        quantity: item.quantity || 1,
-      })),
-    };
 
     try {
-      const response = await fetch("/checkout", {
+      const orderData = {
+        fullName,
+        address,
+        phone,
+        items: cart.map((item) => ({ 
+          id: item.id, 
+          name: item.name, 
+          price: item.price, 
+          quantity: item.quantity || 1 
+        })),
+        total,
+        userId: "68f10b0e1cd3b39074630ad9",
+      };
+
+      console.log("Отправка заказа:", orderData);
+
+      const response = await fetch("http://localhost:5000/api/orders/simple", {
         method: "POST",
-        headers: {
+        headers: { 
           "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
-        body: JSON.stringify(newOrder),
+        body: JSON.stringify(orderData),
       });
 
+      const result = await response.json();
+
       if (response.ok) {
-        const data = await response.json();
         setCart([]);
         localStorage.removeItem("cart");
-        alert("Заказ оформлен! Перейдите в профиль, чтобы посмотреть историю.");
-        window.location.href = "/profile";
+        setFullName("");
+        setAddress("");
+        setPhone("");
+        alert(`✅ Заказ успешно оформлен! Номер заказа: ${result.order?.orderNumber || 'успешно создан'}`);
       } else {
-        const errorData = await response.json();
-        alert(`Ошибка при оформлении заказа: ${errorData.error || 'Неизвестная ошибка'}`);
+        console.log("Ошибка сервера:", result);
+        alert(`❌ Ошибка: ${result.message || "Неизвестная ошибка"}`);
       }
     } catch (err) {
-      alert("Ошибка подключения: " + err.message);
+      console.error("Ошибка подключения:", err);
+      alert("❌ Ошибка подключения к серверу");
+    } finally {
+      setLoading(false);
     }
   };
 
   if (cart.length === 0) {
-    return <p className="empty-cart">Ваша корзина пуста</p>;
+    return (
+      <div className="cart-container">
+        <h1 className="cart-title">🛒 Ваша корзина</h1>
+        <p className="empty-cart">Ваша корзина пуста</p>
+      </div>
+    );
   }
 
   return (
     <div className="cart-container">
       <h1 className="cart-title">🛒 Ваша корзина</h1>
-
+      
       <div className="cart-items">
         {cart.map((item, index) => (
           <div key={index} className="cart-item">
-            <img src={item.img} alt={item.name} />
+            <img src={item.image || item.img} alt={item.name} className="cart-item-image" />
             <div className="cart-item-info">
-              <p className="cart-item-name">{item.name}</p>
-              <p className="cart-item-price">${item.price} x {item.quantity || 1}</p>
+              <h3>{item.name}</h3>
+              <p className="cart-item-description">{item.description}</p>
+              <p className="cart-item-price">${item.price}</p>
+              
+              <div className="quantity-controls">
+                <button 
+                  onClick={() => updateQuantity(index, (item.quantity || 1) - 1)}
+                  disabled={item.quantity <= 1}
+                >
+                  -
+                </button>
+                <span>{item.quantity || 1}</span>
+                <button 
+                  onClick={() => updateQuantity(index, (item.quantity || 1) + 1)}
+                >
+                  +
+                </button>
+              </div>
+              
+              <p className="cart-item-total">
+                Итого: ${(item.price * (item.quantity || 1)).toFixed(2)}
+              </p>
+              
+              <button 
+                onClick={() => removeItem(index)}
+                className="remove-btn"
+              >
+                Удалить
+              </button>
             </div>
           </div>
         ))}
       </div>
-
-      <h2 className="cart-total">Итого: ${total}</h2>
-
+      
+      <div className="cart-total">
+        <h2>Общая сумма: ${total.toFixed(2)}</h2>
+      </div>
+      
       <form onSubmit={handleCheckout} className="checkout-form">
-        <input
-          type="text"
-          placeholder="ФИО"
-          value={fullName}
-          onChange={(e) => setFullName(e.target.value)}
-          required
+        <h3>Данные для доставки</h3>
+        
+        <input 
+          type="text" 
+          placeholder="ФИО" 
+          value={fullName} 
+          onChange={(e) => setFullName(e.target.value)} 
+          required 
         />
-        <input
-          type="text"
-          placeholder="Адрес доставки"
-          value={address}
-          onChange={(e) => setAddress(e.target.value)}
-          required
+        
+        <input 
+          type="text" 
+          placeholder="Адрес доставки" 
+          value={address} 
+          onChange={(e) => setAddress(e.target.value)} 
+          required 
         />
-        <input
-          type="tel"
-          placeholder="Номер телефона"
-          value={phone}
-          onChange={(e) => setPhone(e.target.value)}
-          required
+        
+        <input 
+          type="tel" 
+          placeholder="Телефон" 
+          value={phone} 
+          onChange={(e) => setPhone(e.target.value)} 
+          required 
         />
-        <button type="submit" className="checkout-btn">Оплатить</button>
+        
+        <button 
+          type="submit" 
+          className="checkout-btn"
+          disabled={loading}
+        >
+          {loading ? "Оформление..." : `Оплатить $${total.toFixed(2)}`}
+        </button>
       </form>
-
-      <p className="delivery-info">🚚 Заказ будет доставлен в течение 1–2 дней</p>
     </div>
   );
 }

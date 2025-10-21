@@ -1,21 +1,25 @@
-import jwt from "jsonwebtoken";
+import jwt from 'jsonwebtoken';
+import { User } from '../models/User.js';
 
-const auth = (req, res, next) => {
+const auth = async (req, res, next) => {
   try {
-    const authHeader = req.headers['authorization'];
-    console.log("Проверка авторизации. Заголовок:", authHeader);
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({ error: "Нет авторизации" });
+    const token = req.header('Authorization')?.replace('Bearer ', '');
+    
+    if (!token) {
+      return res.status(401).json({ message: 'Нет токена, доступ запрещен' });
     }
 
-    const token = authHeader.split(' ')[1];
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret-key');
-    req.userId = decoded.userId;
-    console.log("Успешная авторизация. User ID:", req.userId);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret');
+    const user = await User.findById(decoded.id).select('-password');
+    
+    if (!user) {
+      return res.status(401).json({ message: 'Токен не действителен' });
+    }
+
+    req.user = user;
     next();
-  } catch (err) {
-    console.error("Ошибка авторизации:", err.message);
-    res.status(401).json({ error: "Недействительный токен" });
+  } catch (error) {
+    res.status(401).json({ message: 'Токен не действителен' });
   }
 };
 

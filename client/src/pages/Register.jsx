@@ -1,11 +1,22 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
-import "../style/auth.css";
+import React, { useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
+import "../style/register.css"; // Добавьте эту строку
 
-function Register() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [name, setName] = useState(""); // Добавь поле имени
+const Register = () => {
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    password: "",
+  });
+
+  const navigate = useNavigate();
+
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
+  };
 
   const handleRegister = async (e) => {
     e.preventDefault();
@@ -13,66 +24,70 @@ function Register() {
     try {
       const response = await fetch("http://localhost:5000/api/auth/register", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          name, // добавь это поле
-          email,
-          password,
-        }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
       });
 
-      const data = await response.json();
-
-      if (response.ok) {
-        alert("Регистрация успешна! Теперь войдите.");
-        window.location.href = "/login";
-      } else {
-        alert(data.error || "Ошибка регистрации");
+      if (!response.ok) {
+        throw new Error(`Ошибка: ${response.status}`);
       }
+
+      const data = await response.json();
+      console.log("✅ Успех:", data);
+      alert("Регистрация прошла успешно!");
+      // После успешной регистрации переходим на страницу входа
+      navigate("/login");
     } catch (error) {
       console.error("Ошибка:", error);
-      alert("Ошибка соединения с сервером");
+      alert("Ошибка регистрации: " + error.message);
     }
   };
 
   return (
-    <div className="auth-container">
-      <div className="auth-card">
-        <h2>Регистрация</h2>
-        <form onSubmit={handleRegister}>
-          <input
-            type="text"
-            placeholder="Имя"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            required
-          />
-          <input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-          <input
-            type="password"
-            placeholder="Пароль"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-          <button type="submit" className="btn">
-            Зарегистрироваться
-          </button>
-        </form>
-        <p>
-          Уже есть аккаунт? <Link to="/login">Войти</Link>
-        </p>
-      </div>
+    <div className="register-container">
+      <form onSubmit={handleRegister} className="register-form">
+        <h1>Регистрация</h1>
+        
+        <label>Имя:</label>
+        <input
+          type="text"
+          name="name"
+          placeholder="Ваше имя"
+          value={formData.name}
+          onChange={handleChange}
+          required
+        />
+
+        <label>Email:</label>
+        <input
+          type="email"
+          name="email"
+          placeholder="Ваш email"
+          value={formData.email}
+          onChange={handleChange}
+          required
+        />
+
+        <label>Пароль:</label>
+        <input
+          type="password"
+          name="password"
+          placeholder="Ваш пароль"
+          value={formData.password}
+          onChange={handleChange}
+          required
+        />
+
+        <button type="submit" className="btn-primary">
+          Зарегистрироваться
+        </button>
+
+        <div className="auth-link">
+          <p>Уже есть аккаунт? <Link to="/login">Войти</Link></p>
+        </div>
+      </form>
     </div>
   );
-}
+};
 
 export default Register;
